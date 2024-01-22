@@ -1,0 +1,61 @@
+version: "3.8"
+
+services:
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - 3199:3100
+    volumes:
+      - '$PWD/loki-config-test.yml:/etc/loki/loki-config.yml'
+    command: -config.file=/etc/loki/loki-config.yml
+    networks:
+      - loki
+    
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      - ./provisioning/:/etc/grafana/provisioning/
+    restart: unless-stopped
+      #    environment:
+      #      - TERM=linux
+      #      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-polystat-panel
+    ports:
+      - 3000:3000
+    networks:
+      - loki
+  
+  promtail:
+    image: grafana/promtail:2.9.2
+    volumes:
+      - ./promtail/promtail-local-config-1.yaml:/etc/promtail/config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yaml
+    networks:
+      - loki
+
+  promtails:
+    image: grafana/promtail:2.9.2
+    volumes:
+      - ./promtail/promtail-local-config-2.yaml:/etc/promtail/config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yaml
+    networks:
+      - loki
+
+  flog:
+    image: mingrammer/flog
+    command: -f json -d 2000ms -l
+    networks:
+      - loki
+  
+  flogs:
+    image: mingrammer/flog
+    command: -f json -d 5000ms -l
+    networks:
+      - loki
+
+networks:
+  loki:
